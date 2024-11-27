@@ -2,7 +2,7 @@ import random
 import logging
 from telegram import Update, ForceReply, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler, CallbackContext
-from utils import session_scope, save_name, save_wish, update_wish, list_participants, list_wish_with_id
+from utils import session_scope, save_name, save_wish, update_wish, list_all_participants, list_wish_with_id
 from config import ADMIN_USER_IDS
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -13,7 +13,7 @@ WISH_INPUT, WISH_CHANGE, NAME = range(3)
 def is_admin(user_id):
     return user_id in ADMIN_USER_IDS
 
-async def distribution(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def distribution(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if not is_admin(update.effective_user.id):
         await update.effective_message.reply_text('У вас нет прав на выполнение этой команды.')
         return
@@ -35,35 +35,40 @@ async def distribution(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 await context.bot.send_message(chat_id=participant.user_id, text=f'Ты тайный Санта для: {participant.recipient.name}! Он записал следующий желания {wish_with_id}')
 
             await update.effective_message.reply_text('Жеребьевка завершена! Участники получили свои назначения.')
+
     except Exception as e:
         logger.error(f'Error in /distribution command: {e}')
         await update.effective_message.reply_text('Произошла ошибка. Пожалуйста, попробуйте позже.')
 
-async def list_participants(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    return ConversationHandler.END
+
+async def list_participants(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if not is_admin(update.effective_user.id):
         await update.effective_message.reply_text('У вас нет прав на выполнение этой команды.')
         return
     logger.info(f'Admin {update.effective_user.id} is trying to list participants.')
     try:
         with session_scope() as session:
-            participants = list_participants(session)
+            participants = list_all_participants(session)
             if participants:
                 participant_list = "\n".join([f"{p.name} (@{p.username})" for p in participants])
-                await update.effective_message.reply_text(f'Участники:\n{participant_list}')
+                await context.application.bot.send_message(chat_id=update.effective_chat.id, text=participant_list)
             else:
-                await update.effective_message.reply_text('Нет участников.')
+                await context.application.bot.send_message(chat_id=update.effective_chat.id, text='Нет участников.')
     except Exception as e:
         logger.error(f'Error in /list command: {e}')
-        await update.effective_message.reply_text('Произошла ошибка. Пожалуйста, попробуйте позже.')
+        await context.application.bot.send_message(chat_id=update.effective_chat.id, text='Произошла ошибка. Пожалуйста, попробуйте позже.')
+    
+    return ConversationHandler.END
 
-async def check_distribution(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def check_distribution(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if not is_admin(update.effective_user.id):
         await update.effective_message.reply_text('У вас нет прав на выполнение этой команды.')
         return
     logger.info(f'Admin {update.effective_user.id} is checking the distribution.')
     try:
         with session_scope() as session:
-            participants = list_participants(session)
+            participants = list_all_participants(session)
             if len(participants) < 2:
                 await update.effective_message.reply_text('Недостаточно участников для проведения жеребьевки.')
                 return
@@ -77,9 +82,12 @@ async def check_distribution(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
             distribution_text = "\n".join(distribution_list)
             await update.effective_message.reply_text(f'Тестовое распределение:\n{distribution_text}')
+
     except Exception as e:
         logger.error(f'Error in /check_distribution command: {e}')
         await update.effective_message.reply_text('Произошла ошибка. Пожалуйста, попробуйте позже.')
+
+    return ConversationHandler.END
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text(

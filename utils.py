@@ -64,7 +64,7 @@ def update_wish(session, user_id, new_wish_text):
         session.add(new_wish)
         session.commit()  # Фиксируем изменения
 
-def list_participants(session):
+def list_all_participants(session):
     return session.query(Participant).all()
 
 def list_wish_with_id(session, user_id):
