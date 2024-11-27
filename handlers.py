@@ -20,7 +20,7 @@ async def distribution(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     logger.info(f'Admin {update.effective_user.id} is trying to distribution the Secret Santa.')
     try:
         with session_scope() as session:
-            participants = list_participants(session)
+            participants = list_all_participants(session)
             
             if len(participants) < 2:
                 await update.effective_message.reply_text('Недостаточно участников для проведения жеребьевки.')
