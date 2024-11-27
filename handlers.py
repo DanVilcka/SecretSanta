@@ -2,7 +2,7 @@ import random
 import logging
 from telegram import Update, ForceReply, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler, CallbackContext
-from utils import session_scope, save_name, save_wish, update_wish, list_participants
+from utils import session_scope, save_name, save_wish, update_wish, list_participants, list_wish_with_id
 from config import ADMIN_USER_IDS
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -21,6 +21,7 @@ async def distribution(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     try:
         with session_scope() as session:
             participants = list_participants(session)
+            
             if len(participants) < 2:
                 await update.effective_message.reply_text('Недостаточно участников для проведения жеребьевки.')
                 return
@@ -30,7 +31,8 @@ async def distribution(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 participant.recipient_id = participants[(i + 1) % len(participants)].user_id
 
             for participant in participants:
-                await context.bot.send_message(chat_id=participant.user_id, text=f'Ты тайный Санта для: {participant.recipient.name}')
+                wish_with_id = list_wish_with_id(session, participant.recipient_id)
+                await context.bot.send_message(chat_id=participant.user_id, text=f'Ты тайный Санта для: {participant.recipient.name}! Он записал следующий желания {wish_with_id}')
 
             await update.effective_message.reply_text('Жеребьевка завершена! Участники получили свои назначения.')
     except Exception as e:
@@ -70,7 +72,8 @@ async def check_distribution(update: Update, context: ContextTypes.DEFAULT_TYPE)
             distribution_list = []
             for i, participant in enumerate(participants):
                 recipient = participants[(i + 1) % len(participants)]
-                distribution_list.append(f'{participant.name} (@{participant.username}) будет Сантой для {recipient.name} (@{recipient.username})')
+                wish_with_id = list_wish_with_id(session, recipient.id)
+                distribution_list.append(f'{participant.name} (@{participant.username}) будет Сантой для {recipient.name} (@{recipient.username}) c желаниями {wish_with_id}')
 
             distribution_text = "\n".join(distribution_list)
             await update.effective_message.reply_text(f'Тестовое распределение:\n{distribution_text}')

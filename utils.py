@@ -66,3 +66,6 @@ def update_wish(session, user_id, new_wish_text):
 
 def list_participants(session):
     return session.query(Participant).all()
+
+def list_wish_with_id(session, user_id):
+    return session.query(Wish).filter_by(user_id=user_id).first()
