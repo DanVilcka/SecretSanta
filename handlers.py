@@ -2,7 +2,7 @@ import random
 import logging
 from telegram import Update, ForceReply, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler, CallbackContext
-from utils import session_scope, save_name, save_wish, update_wish, list_all_participants, list_wish_with_id
+from utils import session_scope, save_name, save_wish, update_wish, list_all_participants, list_wish_with_id, add_gift_exchange, clear_gift_exchange, add_gift_exchange_check
 from config import ADMIN_USER_IDS
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -28,12 +28,11 @@ async def distribution(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
             random.shuffle(participants)
             for i, participant in enumerate(participants):
-                participant.recipient_id = participants[(i + 1) % len(participants)].user_id
-
-            for participant in participants:
-                wish_with_id = list_wish_with_id(session, participant.recipient_id)
-                await context.bot.send_message(chat_id=participant.user_id, text=f'Ты тайный Санта для: {participant.recipient.name}! Он записал следующий желания {wish_with_id}')
-
+                recipient = participants[(i + 1) % len(participants)]
+                add_gift_exchange(session, participant.user_id, recipient.user_id)
+                wish_with_id = list_wish_with_id(session, recipient.user_id)
+                await context.bot.send_message(chat_id=participant.user_id, text=f'Ты тайный Санта для: {recipient.name}!\nЖелания:\n{wish_with_id.wish_text}')
+                
             await update.effective_message.reply_text('Жеребьевка завершена! Участники получили свои назначения.')
 
     except Exception as e:
@@ -68,6 +67,8 @@ async def check_distribution(update: Update, context: ContextTypes.DEFAULT_TYPE)
     logger.info(f'Admin {update.effective_user.id} is checking the distribution.')
     try:
         with session_scope() as session:
+            clear_gift_exchange(session)
+
             participants = list_all_participants(session)
             if len(participants) < 2:
                 await update.effective_message.reply_text('Недостаточно участников для проведения жеребьевки.')
@@ -77,8 +78,10 @@ async def check_distribution(update: Update, context: ContextTypes.DEFAULT_TYPE)
             distribution_list = []
             for i, participant in enumerate(participants):
                 recipient = participants[(i + 1) % len(participants)]
-                wish_with_id = list_wish_with_id(session, recipient.id)
-                distribution_list.append(f'{participant.name} (@{participant.username}) будет Сантой для {recipient.name} (@{recipient.username}) c желаниями {wish_with_id}')
+                logger.info(f'Admin {update.effective_user.id} checking ststus of query {recipient.user_id}')
+                wish_with_id = list_wish_with_id(session, recipient.user_id)
+                distribution_list.append(f'{participant.name} (@{participant.username}) будет Сантой для {recipient.name} (@{recipient.username}) c желаниями:\n {wish_with_id.wish_text}')
+                add_gift_exchange_check(session, participant.user_id, recipient.user_id)
 
             distribution_text = "\n".join(distribution_list)
             await update.effective_message.reply_text(f'Тестовое распределение:\n{distribution_text}')
@@ -93,7 +96,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text(
         "Привет! Я Бот, который подберет тебе тайного санту!\n"
         "Чтобы закончить разговор отправь /cancel\n\n"
-        "Теперь мне необходимо твоё истинное имя и фамилия"
+        "Теперь мне необходимы твоё истинное имя и фамилия"
     )
     return NAME
 
@@ -107,8 +110,8 @@ async def name_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     await update.message.reply_text(
         "Записал! Перехожу к следующему шагу!\n"
-        "Попробуй придумать несколько идея для подарков самому себе!\n"
-        "В случае если совсем ничего не приходит в голову, я советуую написать подсказки (свои фобби или интересы)"
+        "Попробуй придумать несколько идей для подарка самому себе!\n"
+        "В случае, если совсем ничего не приходит в голову, я советую написать подсказки (свои хобби или интересы)"
     )
 
     return WISH_INPUT

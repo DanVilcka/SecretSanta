@@ -11,14 +11,28 @@ class Participant(Base):
     user_id = Column(Integer, unique=True)
     name = Column(String)
     username = Column(String)
-    recipient_id = Column(Integer, ForeignKey('participants.user_id'))
-    recipient = relationship("Participant", remote_side=[user_id])
 
 class Wish(Base):
     __tablename__ = 'wishes'
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('participants.user_id'))
     wish_text = Column(String)
+
+class GiftExchange(Base):
+    __tablename__ = 'gift_exchange'
+    id = Column(Integer, primary_key=True)
+    participant_id = Column(Integer, ForeignKey('participants.user_id'))
+    participant = relationship("Participant", foreign_keys=[participant_id])
+    receiver_id = Column(Integer, ForeignKey('participants.user_id'))
+    receiver = relationship("Participant", foreign_keys=[receiver_id])
+
+class GiftExchangeCheck(Base):
+    __tablename__ = 'gift_exchange_check'
+    id = Column(Integer, primary_key=True)
+    participant_id = Column(Integer, ForeignKey('participants.user_id'))
+    participant = relationship("Participant", foreign_keys=[participant_id])
+    receiver_id = Column(Integer, ForeignKey('participants.user_id'))
+    receiver = relationship("Participant", foreign_keys=[receiver_id])
 
 def create_tables():
     engine = create_engine(DATABASE_URL)

@@ -2,7 +2,7 @@ from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 from models import create_engine
 from config import DATABASE_URL
-from models import Participant, Wish
+from models import Participant, Wish, GiftExchange, GiftExchangeCheck
 import logging
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -63,6 +63,25 @@ def update_wish(session, user_id, new_wish_text):
         new_wish = Wish(user_id=user_id, wish_text=new_wish_text)
         session.add(new_wish)
         session.commit()  # Фиксируем изменения
+
+def add_gift_exchange(session, participant_id, receiver_id):
+    gift_exchange = GiftExchange(participant_id=participant_id, receiver_id=receiver_id)
+    session.add(gift_exchange)
+    session.commit()
+
+def add_gift_exchange(session, participant_id, receiver_id):
+    gift_exchange = GiftExchange(participant_id=participant_id, receiver_id=receiver_id)
+    session.add(gift_exchange)
+    session.commit()
+
+def add_gift_exchange_check(session, participant_id, receiver_id):
+    gift_exchange = GiftExchangeCheck(participant_id=participant_id, receiver_id=receiver_id)
+    session.add(gift_exchange)
+    session.commit()
+
+def clear_gift_exchange(session):
+    session.query(GiftExchangeCheck).delete()
+    session.commit()
 
 def list_all_participants(session):
     return session.query(Participant).all()
