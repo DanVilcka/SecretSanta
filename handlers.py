@@ -2,10 +2,10 @@ import random
 import logging
 from telegram import Update, ForceReply, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler, CallbackContext
-from utils import session_scope, save_name, save_wish, update_wish, list_all_participants, list_wish_with_id, add_gift_exchange, clear_gift_exchange, add_gift_exchange_check
+from utils import session_scope, save_name, save_wish, update_wish, list_all_participants, list_wish_with_id, add_gift_exchange, clear_gift_exchange, add_gift_exchange_check, list_participant_with_id
 from config import ADMIN_USER_IDS
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 WISH_INPUT, WISH_CHANGE, NAME = range(3)
@@ -17,7 +17,7 @@ async def distribution(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     if not is_admin(update.effective_user.id):
         await update.effective_message.reply_text('У вас нет прав на выполнение этой команды.')
         return
-    logger.info(f'Admin {update.effective_user.id} is trying to distribution the Secret Santa.')
+    logger.warning(f'Admin {update.effective_user.id} is trying to distribution the Secret Santa.')
     try:
         with session_scope() as session:
             participants = list_all_participants(session)
@@ -45,7 +45,7 @@ async def list_participants(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     if not is_admin(update.effective_user.id):
         await update.effective_message.reply_text('У вас нет прав на выполнение этой команды.')
         return
-    logger.info(f'Admin {update.effective_user.id} is trying to list participants.')
+    logger.warning(f'Admin {update.effective_user.id} is trying to list participants.')
     try:
         with session_scope() as session:
             participants = list_all_participants(session)
@@ -78,7 +78,7 @@ async def check_distribution(update: Update, context: ContextTypes.DEFAULT_TYPE)
             distribution_list = []
             for i, participant in enumerate(participants):
                 recipient = participants[(i + 1) % len(participants)]
-                logger.info(f'Admin {update.effective_user.id} checking ststus of query {recipient.user_id}')
+                logger.warning(f'Admin {update.effective_user.id} checking ststus of query {recipient.user_id}')
                 wish_with_id = list_wish_with_id(session, recipient.user_id)
                 distribution_list.append(f'{participant.name} (@{participant.username}) будет Сантой для {recipient.name} (@{recipient.username}) c желаниями:\n {wish_with_id.wish_text}')
                 add_gift_exchange_check(session, participant.user_id, recipient.user_id)
@@ -101,12 +101,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return NAME
 
 async def name_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stores the info about the user and ends the conversation."""
     user = update.message.from_user
-    logger.info("Name of %s: %s", user.first_name, update.message.text)
 
     with session_scope() as session:
-        save_name(session, user.id, update.message.text, user.username)
+        if not list_participant_with_id(session, user.id):
+            save_name(session, user.id, update.message.text, user.username)
+        else:
+            await update.message.reply_text(
+                "Вы уже зарегистрированы на игру!\n"
+            )
+            return ConversationHandler.END
 
     await update.message.reply_text(
         "Записал! Перехожу к следующему шагу!\n"
@@ -159,9 +163,8 @@ async def wish_change(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Cancels and ends the conversation."""
     user = update.message.from_user
-    logger.info("User %s canceled the conversation.", user.first_name)
+    logger.warning("User %s canceled the conversation.", user.first_name)
     await update.message.reply_text(
         "Bye! I hope we can talk again some day."
     )
