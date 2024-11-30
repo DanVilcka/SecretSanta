@@ -5,7 +5,12 @@ from telegram.ext import ContextTypes, ConversationHandler, CallbackContext
 from utils import session_scope, save_name, save_wish, update_wish, list_all_participants, list_wish_with_id, add_gift_exchange, clear_gift_exchange, add_gift_exchange_check, list_participant_with_id
 from config import ADMIN_USER_IDS
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.WARNING)
+logging.basicConfig(
+    level=logging.WARNING, 
+    filename = "logger.log", 
+    format = "%(asctime)s - %(module)s - %(levelname)s - %(funcName)s: %(lineno)d - %(message)s", 
+    datefmt='%H:%M:%S',
+)
 logger = logging.getLogger(__name__)
 
 WISH_INPUT, WISH_CHANGE, NAME = range(3)

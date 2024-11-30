@@ -1,8 +1,8 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/anaconda-postgres
+// README at: https://github.com/devcontainers/templates/tree/main/src/postgres
 {
-	"name": "Anaconda (Python 3) & PostgreSQL",
-	"dockerComposeFile": "podman-compose.yml",
+	"name": "Python 3 & PostgreSQL",
+	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 
@@ -10,10 +10,11 @@
 	// "features": {},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [5432],
+	// This can be used to network with other containers or the host.
+	"forwardPorts": [5432, 5432],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "python --version",
+    "postCreateCommand": "pip install -r /tmp/pip-tmp/requirements.txt && python bot.py",
 
 	// Configure tool-specific properties.
 	// "customizations": {},

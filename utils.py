@@ -5,7 +5,12 @@ from config import DATABASE_URL
 from models import Participant, Wish, GiftExchange, GiftExchangeCheck
 import logging
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.WARNING)
+logging.basicConfig(
+    level=logging.WARNING, 
+    filename = "logger.log", 
+    format = "%(asctime)s - %(module)s - %(levelname)s - %(funcName)s: %(lineno)d - %(message)s", 
+    datefmt='%H:%M:%S',
+)
 logger = logging.getLogger(__name__)
 
 def create_session():
