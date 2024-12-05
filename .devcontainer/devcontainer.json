@@ -11,10 +11,10 @@
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// This can be used to network with other containers or the host.
-	"forwardPorts": [5432, 5432],
+	// "forwardPorts": [5432, 5432],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-    "postCreateCommand": "pip install -r /tmp/pip-tmp/requirements.txt && python bot.py",
+    "postCreateCommand": "pip install -r /tmp/pip-tmp/requirements.txt && nohup python bot.py",
 
 	// Configure tool-specific properties.
 	// "customizations": {},
