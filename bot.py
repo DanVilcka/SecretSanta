@@ -26,7 +26,7 @@ def main() -> None:
         fallbacks=[CommandHandler('cancel', cancel)]
     )
 
-    application.add_handler(conv_handler_registration)
+    # application.add_handler(conv_handler_registration)
     application.add_handler(conv_handler_update)
 
     application.add_handler(CommandHandler("distribution", distribution))
