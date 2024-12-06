@@ -40,7 +40,11 @@ async def distribution(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
                 recipient = participants[(i + 1) % len(participants)]
                 add_gift_exchange(session, participant.user_id, recipient.user_id)
                 wish_with_id = list_wish_with_id(session, recipient.user_id)
-                await context.bot.send_message(chat_id=participant.user_id, text=f'Ты тайный Санта для: {recipient.name}!\nЖелания:\n{wish_with_id.wish_text}')
+                try:
+                    await context.bot.send_message(chat_id=participant.user_id, text=f'Ты тайный Санта для: {recipient.name}!\nЖелания:\n{wish_with_id.wish_text}')
+                    logger.info(f'Message sent successfully to: {participant.user_id}\n with {wish_with_id.wish_text}')
+                except Exception as e:
+                    logger.error(f'Failed to send message: {e}')
                 
             await update.effective_message.reply_text('Жеребьевка завершена! Участники получили свои назначения.')
 
