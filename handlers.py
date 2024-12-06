@@ -2,7 +2,7 @@ import random
 import logging
 from telegram import Update, ForceReply, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler, CallbackContext
-from utils import session_scope, save_name, save_wish, update_wish, list_all_participants, list_wish_with_id, add_gift_exchange, clear_gift_exchange, add_gift_exchange_check, list_participant_with_id
+from utils import session_scope, save_name, save_wish, update_wish, list_all_participants, list_wish_with_id, add_gift_exchange, clear_gift_exchange, add_gift_exchange_check, list_participant_with_id, is_distribution_active
 from config import ADMIN_USER_IDS
 
 logging.basicConfig(
@@ -25,6 +25,10 @@ async def distribution(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     logger.warning(f'Admin {update.effective_user.id} is trying to distribution the Secret Santa.')
     try:
         with session_scope() as session:
+            if is_distribution_active(session) > 0:
+                await update.effective_message.reply_text('Жеребьевка уже проведена. Пожалуйста, сбросьте текущую жеребьевку перед новой.')
+                return
+            
             participants = list_all_participants(session)
             
             if len(participants) < 2:

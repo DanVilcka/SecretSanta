@@ -60,29 +60,26 @@ def save_wish(session, user_id, wish_text):
     if not participant:
         raise ValueError("Пользователь не найден в базе данных")
     
-    # Создаем новый объект Wish и добавляем его в сессию
     new_wish = Wish(user_id=user_id, wish_text=wish_text)
     session.add(new_wish)
-    session.commit()  # Фиксируем изменения
+    session.commit()
 
 def update_wish(session, user_id, new_wish_text):
-    # Проверяем, существует ли пользователь в базе данных
     logger.warning(f"Start updating wish for user {user_id} from '{new_wish_text}' to db")
     participant = session.query(Participant).filter_by(user_id=user_id).first()
     if not participant:
         raise ValueError("Пользователь не найден в базе данных")
-    
-    # Обновляем желание пользователя
+
     wish = session.query(Wish).filter_by(user_id=user_id).first()
     if wish:
         logger.warning(f"Updating wish for user {user_id} from '{wish.wish_text}' to '{new_wish_text}'")
         wish.wish_text = new_wish_text
-        session.commit()  # Фиксируем изменения
+        session.commit()
     else:
         logger.warning(f"Creating new wish for user {user_id}: '{new_wish_text}'")
         new_wish = Wish(user_id=user_id, wish_text=new_wish_text)
         session.add(new_wish)
-        session.commit()  # Фиксируем изменения
+        session.commit()
 
 def add_gift_exchange(session, participant_id, receiver_id):
     gift_exchange = GiftExchange(participant_id=participant_id, receiver_id=receiver_id)
@@ -111,3 +108,6 @@ def list_participant_with_id(session, user_id):
 
 def list_wish_with_id(session, user_id):
     return session.query(Wish).filter_by(user_id=user_id).first()
+
+def is_distribution_active(session):
+    return session.query(GiftExchange).count()
